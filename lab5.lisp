@@ -11,6 +11,10 @@
           (push pairs alist))) ; Додаємо поточний асоціативний список до загального списку
       (nreverse alist)))) ; Повертаємо результат у правильному порядку
 
+(defun clean-string (str)
+  "Очищає рядок від символів Carriage Return (\\r) і пробілів."
+  (string-trim '(#\Space #\Tab #\Return) str))
+
 (defun split (line &optional (delimiter #\,))
   "Розбиває рядок на частини за вказаним розділювачем (за замовчуванням кома)."
   (let ((result nil)
@@ -18,10 +22,10 @@
     (loop for i = (position delimiter line :start start)
           do (if i
                  (progn
-                   (push (subseq line start i) result)
+                   (push (clean-string (subseq line start i)) result)
                    (setf start (1+ i)))
                  (progn
-                   (push (subseq line start) result)
+                   (push (clean-string (subseq line start)) result)
                    (return))))
     (nreverse result)))
 
