@@ -29,5 +29,34 @@
                    (return))))
     (nreverse result)))
 
+(defun select (filename &optional filter-fn)
+  "Повертає лямбда-вираз, який виконує вибірку записів з таблиці.
+   filename - шлях до CSV-файлу.
+   filter-fn - додатковий об'єкт для фільтрації (наприклад, функція)."
+  (lambda (&rest filters)
+    "Фільтрує записи у таблиці за заданими ключами та значеннями."
+    (let* ((table (read-csv-to-alist filename)) ; Зчитуємо таблицю
+           (filtered-table table))             ; Початково фільтрована таблиця = вся таблиця
+      ;; Якщо є фільтри, застосовуємо їх
+      (when filters
+        (setf filtered-table
+              (remove-if-not
+               (lambda (row)
+                 (every (lambda (filter)
+                          (let ((key (car filter))
+                                (value (cdr filter)))
+                            (string= (cdr (assoc key row :test #'string=)) value)))
+                        filters))
+               table)))
+      ;; Якщо передана додаткова функція фільтрації, застосовуємо її
+      (when filter-fn
+        (setf filtered-table (remove-if-not filter-fn filtered-table)))
+      filtered-table)))
+
 
 (defparameter *table1* (read-csv-to-alist "C:\\Users\\exstr\\Desktop\\lab5.csv"))
+(funcall *table1*)
+(defparameter *select-table1* (select "C:\\Users\\exstr\\Desktop\\lab5.csv"))
+(funcall *select-table1*)
+
+
