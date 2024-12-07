@@ -11,6 +11,57 @@
           (push pairs alist))) ; Додаємо поточний асоціативний список до загального списку
       (nreverse alist)))) ; Повертаємо результат у правильному порядку
 
+
+(defun read-csv-to-alist (filename)
+  "Зчитує CSV-файл і повертає дані у вигляді асоціативного списку (alist).
+   Перший рядок файлу вважається заголовком (ключі)."
+  (with-open-file (stream filename :direction :input)
+    (let* ((header (split (read-line stream))) ; Зчитуємо перший рядок — ключі
+           (alist nil)) ; Початковий пустий список
+      (do ((line (read-line stream nil 'eof) (read-line stream nil 'eof)))
+          ((eq line 'eof) alist) ; Кінець файлу
+        (let* ((values (split line)) ; Розділяємо значення
+               (pairs (pairlis header values))) ; Створюємо асоціативний список
+          (push pairs alist))) ; Додаємо поточний асоціативний список до загального списку
+      (nreverse alist)))) ; Повертаємо результат у правильному порядку
+
+
+ (defun read-csv-to-alist (filename)
+  "Зчитує CSV-файл і повертає дані у вигляді асоціативного списку (alist).
+   Перший рядок файлу вважається заголовком (ключі)."
+  (with-open-file (stream filename :direction :input)
+    (let* ((header (split (clean-string (read-line stream)))) ; Зчитуємо перший рядок — ключі
+           (alist nil)) ; Початковий пустий список
+      (do ((line (read-line stream nil 'eof) (read-line stream nil 'eof)))
+          ((eq line 'eof) alist) ; Кінець файлу
+        (let* ((values (split (clean-string line))) ; Розділяємо значення
+               (record nil)) ; Створюємо порожній асоціативний список для запису
+          ;; Додаємо пару ключ-значення для кожного значення
+          (loop for key in header
+                for value in values
+                do (push (cons key value) record)) 
+          ;; Додаємо запис до основного списку
+          (push (nreverse record) alist)))
+      (nreverse alist)))) ; Повертаємо результат у правильному порядку
+
+(defun read-csv-to-alist (filename)
+  "Зчитує CSV-файл і повертає дані у вигляді асоціативного списку (alist).
+   Перший рядок файлу вважається заголовком (ключі)."
+  (with-open-file (stream filename :direction :input)
+    (let* ((header (split (clean-string (read-line stream)))) ; Зчитуємо перший рядок — ключі
+           (alist nil)) ; Початковий пустий список
+      (do ((line (read-line stream nil 'eof) (read-line stream nil 'eof)))
+          ((eq line 'eof) alist) ; Кінець файлу
+        (let* ((values (split (clean-string line))) ; Розділяємо значення
+               (record nil)) ; Створюємо порожній асоціативний список для запису
+          ;; Додаємо пару ключ-значення для кожного значення за допомогою acons
+          (loop for key in header
+                for value in values
+                do (setq record (acons key value record))) ; Використовуємо acons замість cons
+          ;; Додаємо запис до основного списку
+          (push (nreverse record) alist)))
+      (nreverse alist)))) ; Повертаємо результат у правильному порядку
+
 (defun clean-string (str)
   "Очищає рядок від символів Carriage Return (\\r) і пробілів."
   (string-trim '(#\Space #\Tab #\Return) str))
@@ -82,6 +133,20 @@
   "Конвертує список асоціативних списків RECORDS у список геш-таблиць."
   (mapcar #'alist-to-hash-table records)) ; Конвертуємо кожен запис у геш-таблицю
 
+(defun print-table (records)
+  "Виводить список асоціативних списків RECORDS у вигляді таблиці з вирівнюванням по ширині."
+  (when records
+    (let* ((keys (mapcar #'car (first records))) ; Отримуємо ключі з першого запису
+           (column-width 12)) ; Фіксована ширина для кожного стовпця
+      ;; Друкуємо заголовки
+      (dolist (key keys)
+        (format t "~vA" column-width key))
+      (format t "~%~A~%" (make-string (* column-width (length keys)) :initial-element #\-))
+      ;; Друкуємо записи
+      (dolist (record records)
+        (dolist (key keys)
+          (format t "~vA" column-width (cdr (assoc key record :test #'equal))))
+        (format t "~%")))))
 
 
 (defparameter *table1* (read-csv-to-alist "C:\\Users\\exstr\\Desktop\\lab5.csv"))
