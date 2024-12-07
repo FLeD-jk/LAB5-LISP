@@ -53,6 +53,24 @@
         (setf filtered-table (remove-if-not filter-fn filtered-table)))
       filtered-table)))
 
+(defun write-alist-to-csv (data filename)
+  "Записує список асоціативних списків у файл у форматі CSV.
+   data - список записів, де кожен запис є асоціативним списком.
+   filename - шлях до файлу для збереження."
+  (with-open-file (stream filename :direction :output :if-exists :supersede)
+    (when data
+      ;; 1. Визначаємо заголовки (ключі) зі списку
+      (let* ((keys (mapcar #'car (first data))) ; Отримуємо ключі з першого запису
+             (header (format nil "~{~A~^,~}" keys))) ; Форматуємо заголовки як CSV-рядок
+        ;; 2. Записуємо заголовки у файл
+        (format stream "~A~%" header)
+        ;; 3. Записуємо кожен запис у файл
+        (dolist (record data)
+          (let ((line (format nil "~{~A~^,~}" 
+                             (mapcar (lambda (key) (cdr (assoc key record :test #'string=))) keys))))
+            (format stream "~A~%" line)))))))
+
+
 
 (defparameter *table1* (read-csv-to-alist "C:\\Users\\exstr\\Desktop\\lab5.csv"))
 (funcall *table1*)
