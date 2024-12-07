@@ -71,6 +71,18 @@
             (format stream "~A~%" line)))))))
 
 
+(defun alist-to-hash-table (alist)
+  "Конвертує асоціативний список ALIST у геш-таблицю і повертає її."
+  (let ((hash-table (make-hash-table :test #'equal))) ; Створюємо порожню геш-таблицю
+    (dolist (pair alist) ; Перебираємо пари ключ-значення
+      (setf (gethash (car pair) hash-table) (cdr pair))) ; Додаємо пару у геш-таблицю
+    hash-table)) ; Повертаємо готову геш-таблицю
+
+(defun records-to-hash-tables (records)
+  "Конвертує список асоціативних списків RECORDS у список геш-таблиць."
+  (mapcar #'alist-to-hash-table records)) ; Конвертуємо кожен запис у геш-таблицю
+
+
 
 (defparameter *table1* (read-csv-to-alist "C:\\Users\\exstr\\Desktop\\lab5.csv"))
 (funcall *table1*)
