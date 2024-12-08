@@ -92,16 +92,40 @@
   "Виводить список асоціативних списків RECORDS у вигляді таблиці з вирівнюванням по ширині."
   (when records
     (let* ((keys (mapcar #'car (first records))) ; Отримуємо ключі з першого запису
-           (column-width 12)) ; Фіксована ширина для кожного стовпця
+           (column-width 20)) ; Фіксована ширина для кожного стовпця
       ;; Друкуємо заголовки
       (dolist (key keys)
-        (format t "~vA" column-width key))
-      (format t "~%~A~%" (make-string (* column-width (length keys)) :initial-element #\-))
+        (format t "~vA" column-width key)) ; Форматуємо кожен заголовок
+      (format t "~%~A~%" (make-string (* column-width (length keys)) :initial-element #\-)) ; Лінія після заголовків
       ;; Друкуємо записи
       (dolist (record records)
         (dolist (key keys)
-          (format t "~vA" column-width (cdr (assoc key record :test #'equal))))
+          (format t "~vA" column-width (cdr (assoc key record :test #'string=)))) ; Виводимо значення для кожного ключа
         (format t "~%")))))
+
+
+ (defun test-reading-data ()
+    (format t "All data from manufacturers.csv:~%")
+    (print-table (funcall (select "manufacturers.csv")))
+
+    (format t "All data from drones.csv:~%")
+    (print-table (funcall (select "drones.csv")))
+
+
+   (format t "All data from manufacturers.csv:~%")
+    (print-table (funcall (select "drones.csv") :manufacturers "DJI"))
+   
+   (format t "All data from drones.csv:~%")
+    (print-table (funcall (select "drones.csv")))
+)
+
+
+(defun test-check-database ()
+  (format t "Start testing database function~%")
+  (test-reading-data)
+ (test-write-data-to-csv-file)
+ (convert-alist-to-hash-table)
+  (format t "EnD~%"))
 
 
 (defparameter *table1* (read-csv-to-alist "C:\\Users\\exstr\\Desktop\\lab5.csv"))
