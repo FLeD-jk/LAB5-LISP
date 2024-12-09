@@ -1,4 +1,3 @@
-
 (defun read-csv-to-alist (filename)
   "Зчитує CSV-файл і повертає дані у вигляді асоціативного списку (alist).
    Перший рядок файлу вважається заголовком (ключі)."
@@ -36,9 +35,7 @@
     (nreverse result)))
 
 (defun select (filename &optional filter-fn)
-  "Повертає лямбда-вираз, який виконує вибірку записів з таблиці.
-   filename - шлях до CSV-файлу.
-   filter-fn - додатковий об'єкт для фільтрації (наприклад, функція)."
+  "Повертає лямбда-вираз, який виконує вибірку записів з таблиці."
   (lambda (&rest filters)
     "Фільтрує записи у таблиці за заданими ключами та значеннями."
     (let* ((table (read-csv-to-alist filename)) ; Зчитуємо таблицю
@@ -49,15 +46,19 @@
               (remove-if-not
                (lambda (row)
                  (every (lambda (filter)
-                          (let ((key (car filter))
-                                (value (cdr filter)))
-                            (string= (cdr (assoc key row :test #'string=)) value)))
+                          (let* ((key (car filter))
+                                 (values (cdr filter)))
+                            ;; Перевірка, чи значення є в списку можливих значень
+                            (if (listp values)
+                                (member (cdr (assoc key row :test #'string=)) values :test #'string=)
+                                (string= (cdr (assoc key row :test #'string=)) values))))
                         filters))
                table)))
       ;; Якщо передана додаткова функція фільтрації, застосовуємо її
       (when filter-fn
         (setf filtered-table (remove-if-not filter-fn filtered-table)))
       filtered-table)))
+
 
 (defun write-alist-to-csv (data filename)
   "Записує список асоціативних списків у файл у форматі CSV.
@@ -73,7 +74,7 @@
         ;; 3. Записуємо кожен запис у файл
         (dolist (record data)
           (let ((line (format nil "~{~A~^,~}" 
-                             (mapcar (lambda (key) (cdr (assoc key record :test #'string=))) keys))))
+                              (mapcar (lambda (key) (cdr (assoc key record :test #'string=))) keys))))
             (format stream "~A~%" line)))))))
 
 
@@ -101,36 +102,67 @@
       (dolist (record records)
         (dolist (key keys)
           (format t "~vA" column-width (cdr (assoc key record :test #'string=)))) ; Виводимо значення для кожного ключа
-        (format t "~%")))))
+        (format t "~%"))))
+   (format t "~%~%"))
 
 
- (defun test-reading-data ()
-    (format t "All data from manufacturers.csv:~%")
-    (print-table (funcall (select "manufacturers.csv")))
-
-    (format t "All data from drones.csv:~%")
-    (print-table (funcall (select "drones.csv")))
 
 
-   (format t "All data from manufacturers.csv:~%")
-    (print-table (funcall (select "drones.csv") :manufacturers "DJI"))
-   
-   (format t "All data from drones.csv:~%")
-    (print-table (funcall (select "drones.csv")))
-)
+(defun test-reading-data ()
+  (format t "All data from manufacturers.csv:~%")
+  (print-table (funcall (select "manufacturers.csv")))
+
+  (format t "All data from drones.csv:~%")
+  (print-table (funcall (select "drones.csv")))
+
+  (format t "Filter from drones.csv by Manufacturer:~%")
+  (print-table (funcall (select "drones.csv") '("Manufacturer" . "DJI")))
+  
+  (format t "Filter from drones.csv by flight range > 5:~%")
+  (print-table (funcall
+                (select "drones.csv"
+                        (lambda (row)
+                          (let (( flight-range (cdr (assoc "Flight_range(km)" row :test #'string=))))
+                            (> (parse-integer flight-range) 5))))))
+
+  (format t "Filter from drones.csv by flight range = 3 or 5 and manufaturer   = DJI or SRJC:~%")
+  (print-table (funcall (select "drones.csv") '("Flight_range(km)" . ("3" "5"))
+                        '("Manufacturer" . ("DJI" "SRJC"))))
+  )
+
+
+(defun test-write-data-to-csv-file ()
+  "Тестує запис вибірки даних з файлу в CSV."
+  ;; Вивести всі дані з файлу drones.csv
+  (format t "All data from drones.csv:~%")
+  (print-table (funcall (select "drones.csv")))
+  ;; Вивести вибірку з фільтром за діапазоном польоту
+  (format t "Filter from drones.csv by flight range:~%")
+  (let ((filtered (funcall (select "drones.csv") '("Flight_range(km)" . ("3" "15")))))
+    (print-table filtered)  ;; Вивести відфільтровані дані
+    ;; Записати вибірку в файл output.csv
+    (when filtered
+      (write-alist-to-csv filtered "output.csv"))))
+
+(defun test-convert-alist-to-hash-table ()
+  "Тестує конвертацію асоціативного списку в геш-таблицю."
+  (let ((alist '(("Drone_id" . "1") 
+                 ("Drone_name" . "Mamont")
+                 ("Manufacturer" . "Escadrone")
+                 ("Flight_range(km)" . "25"))))
+    ;; Конвертуємо асоціативний список в геш-таблицю
+    (let ((hash (alist-to-hash-table alist)))
+      (format t "~%Hash table:")
+      ;; Перевіряємо значення в геш-таблиці
+      (format t "~%Get Drone_id: ~a~%" (gethash "Drone_id" hash))  ; повинно вивести "1"
+      (format t "~%Get Drone_name: ~a~%" (gethash "Drone_name" hash))  ; повинно вивести "Mamont"
+      (format t "~%Get Manufacturer: ~a~%" (gethash "Manufacturer" hash))    ; повинно вивести "Escadrone"
+      (format t "~%Get Flight_range(km): ~a~%" (gethash "Flight_range(km)" hash)))))
 
 
 (defun test-check-database ()
   (format t "Start testing database function~%")
   (test-reading-data)
- (test-write-data-to-csv-file)
- (convert-alist-to-hash-table)
+  (test-write-data-to-csv-file)
+  (test-convert-alist-to-hash-table)
   (format t "EnD~%"))
-
-
-(defparameter *table1* (read-csv-to-alist "C:\\Users\\exstr\\Desktop\\lab5.csv"))
-(funcall *table1*)
-(defparameter *select-table1* (select "C:\\Users\\exstr\\Desktop\\lab5.csv"))
-(funcall *select-table1*)
-
-
