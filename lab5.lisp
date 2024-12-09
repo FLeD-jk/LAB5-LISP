@@ -67,11 +67,7 @@
       (setf (gethash (car pair) hash-table) (cdr pair))) 
     hash-table)) 
 
-(defun records-to-hash-tables (records)
-  "Конвертує список асоціативних списків RECORDS у список геш-таблиць."
-  (mapcar #'alist-to-hash-table records)) 
 (defun print-table (records)
-  "Виводить список асоціативних списків RECORDS у вигляді таблиці з вирівнюванням по ширині."
   (when records
     (let* ((keys (mapcar #'car (first records))) 
            (column-width 20)) 
@@ -83,7 +79,6 @@
           (format t "~vA" column-width (cdr (assoc key record :test #'string=)))) 
         (format t "~%"))))
    (format t "~%~%"))
-
 
 
 
